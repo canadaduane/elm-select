@@ -2,13 +2,14 @@ module Main exposing (..)
 
 import Html exposing (..)
 import Html.App
-import Html.Attributes
 import Html.Events
 import Dict exposing (Dict, empty)
-import Css
+import Html.CssHelpers
 import MainCss exposing (..)
 
 
+{ id, class, classList } =
+    Html.CssHelpers.withNamespace "elm"
 type Msg
     = EmptyMsg
     | ClickMsg Int
@@ -30,6 +31,7 @@ type alias SelectedStory =
     { id : StoryId, selected : Bool }
 
 
+blankStory : Story
 blankStory =
     Story "[None]" "[None]"
 
@@ -37,56 +39,44 @@ blankStory =
 stories : StoryDict
 stories =
     Dict.empty
-        |> Dict.insert 1 (Story "Christmas Eve" "There once was a negan who sat on a pike, looking for Christmas, and biscuits, and Mike.")
-        |> Dict.insert 2 (Story "John Oliver" "Far, far away in a land called teevee, there lived a wise man whose laugh you could see.")
-
-
-styles =
-    Css.asPairs >> Html.Attributes.style
-
-
-lightRed =
-    Css.rgb 255 235 235
-
-
-white =
-    Css.rgb 255 255 255
+        |> Dict.insert 1
+            (Story
+                "Christmas Eve"
+                """There once was a negan who sat on a pike,
+                looking for Christmas, and biscuits, and Mike."""
+            )
+        |> Dict.insert 2
+            (Story
+                "John Oliver"
+                """Far, far away in a land called teevee, there
+                lived a wise man whose laugh you could see."""
+            )
 
 
 selectView : StoryDict -> StoryId -> Html Msg
 selectView stories selectedStoryId =
     let
         storyLabel id story =
-            let
-                color =
-                    if id == selectedStoryId then
-                        lightRed
-                    else
-                        white
-            in
-                button
-                    [ styles
-                        [ Css.backgroundColor color
-                        , Css.display Css.block
-                        , Css.width (Css.pct 100)
-                        , Css.border (Css.px 0)
-                        , Css.padding (Css.px 5)
-                        ]
-                    , Html.Events.onClick (ClickMsg id)
-                    ]
-                    [ text story.label ]
+            button
+                [ styles <| buttonStyles (id == selectedStoryId)
+                , class [ SelectButton ]
+                , Html.Events.onClick (ClickMsg id)
+                ]
+                [ text story.label ]
     in
-        div [ styles [ Css.flex (Css.int 1) ] ]
+        div [ id LeftPanel ]
             (Dict.map storyLabel stories |> Dict.values)
 
 
+storyView : Story -> Html a
 storyView story =
-    div [ styles [ Css.flex (Css.int 2), Css.marginLeft (Css.px 20) ] ] [ text story.story ]
+    div [ id RightPanel ] [ text story.story ]
 
 
+view : StoryId -> Html Msg
 view model =
     div
-        [ styles (flexStyle ++ thickMargin) ]
+        [ id MainPanel ]
         [ selectView stories model
         , storyView (Dict.get model stories |> Maybe.withDefault blankStory)
         ]
@@ -111,6 +101,7 @@ update msg model =
             ( i, Cmd.none )
 
 
+main : Program Never
 main =
     Html.App.program
         { init = ( model, Cmd.none )
